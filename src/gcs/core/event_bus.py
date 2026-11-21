@@ -12,21 +12,21 @@ class EventBus:
         self._thread = None
         self._lock = threading.Lock()
 
-    def subscribe(self,event_name,callback):
+    def subscribe(self, event_type, callback):
         with self._lock:
-            self.subscribers.setdefault(event_name,[]).append(callback)
+            self.subscribers.setdefault(event_type, []).append(callback)
 
-    def unsubscribe(self, event_name, callback):
+    def unsubscribe(self, event_type, callback):
         with self._lock:
-            callbacks = self.subscribers.get(event_name, [])
+            callbacks = self.subscribers.get(event_type, [])
             if callback in callbacks:
                 callbacks.remove(callback)
 
-    def publish(self, event_name, data=None):
+    def publish(self, event):
         try:
-            self._queue.put_nowait((event_name, data))
+            self._queue.put_nowait(event)
         except queue.Full:
-            log.warning("bus queue full, dropped event %s", event_name)
+            log.warning("bus queue full, dropped event %s", type(event).__name__)
 
     def start(self):
         self._thread = threading.Thread(target=self._run, name="bus", daemon=True)
@@ -40,13 +40,14 @@ class EventBus:
     def _run(self):
         while not self._stop.is_set():
             try:
-                event_name, data = self._queue.get(timeout=0.1)
+                event = self._queue.get(timeout=0.1)
             except queue.Empty:
                 continue
             with self._lock:
-                callbacks = list(self.subscribers.get(event_name, []))
+                callbacks = list(self.subscribers.get(type(event), []))
             for callback in callbacks:
                 try:
-                    callback(data)
+                    callback(event)
                 except Exception:
-                    log.exception("subscriber failed for %s", event_name)
+                    log.exception("subscriber failed for %s", type(event).__name__)
+                    
