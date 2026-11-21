@@ -1,0 +1,6 @@
+INPUT_STATE = "input_state"
+CONTROLLER_CONNECTED = "controller_connected"
+CONTROLLER_DISCONNECTED = "controller_disconnected"
+PROFILE_CHANGED = "profile_changed"
+CONFIG_RELOADED = "config_reloaded"
+SHUTDOWN = "shutdown"

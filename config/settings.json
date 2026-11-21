@@ -1,0 +1,9 @@
+{
+  "input": {
+    "rate_hz": 50,
+    "default_deadzone": 0.1
+  },
+  "logging": {
+    "level": "INFO"
+  }
+}
