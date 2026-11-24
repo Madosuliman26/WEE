@@ -1,9 +1,15 @@
 {
   "input": {
     "rate_hz": 50,
-    "default_deadzone": 0.1
+    "default_deadzone": 0.5
   },
   "logging": {
-    "level": "INFO"
+    "level": "INFO",
+    "file": "logs/gcs.log",
+    "max_bytes": 1000000,
+    "backup_count": 3
+  },
+  "bus": {
+    "queue_size": 1000
   }
 }
