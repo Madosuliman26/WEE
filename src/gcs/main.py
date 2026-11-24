@@ -1,13 +1,16 @@
 import logging
 import signal
 import threading
-
+from gcs.core.events import ProfileChanged       # add to the existing events import
+from gcs.input.profiles import ProfileManager
 from gcs.core.config import ConfigManager
 from gcs.core.event_bus import EventBus
 from gcs.core.events import (
     AxesChanged,
     ButtonPressed,
     ButtonReleased,
+    ControllerConnected,
+    ControllerDisconnected,
     KeyDown,
     KeyUp,
 )
@@ -17,6 +20,18 @@ from gcs.input.keyboard import KeyboardInput
 from gcs.input.service import InputService
 
 log = logging.getLogger(__name__)
+
+
+def on_profile_changed(event):
+    log.info("profile is now %s (%s)", event.profile, event.reason)
+
+
+def on_controller_connected(event):
+    log.info("controller connected: %s", event.name)
+
+
+def on_controller_disconnected(event):
+    log.warning("controller disconnected: %s", event.name)
 
 
 def on_button_pressed(event):
@@ -36,6 +51,9 @@ def on_key_up(event):
 
 
 def on_axes_changed(event):
+    if not event.axes:
+        log.info("axes: no controller")
+        return
     active = {name: value for name, value in event.axes.items() if value != 0}
     log.info("axes: %s", active if active else "centered")
 
@@ -55,12 +73,17 @@ def main():
     signal.signal(signal.SIGINT, lambda signum, frame: stop_event.set())
 
     bus = EventBus(queue_size=config.get("bus.queue_size", 1000))
+    bus.subscribe(ControllerConnected, on_controller_connected)
+    bus.subscribe(ControllerDisconnected, on_controller_disconnected)
     bus.subscribe(ButtonPressed, on_button_pressed)
     bus.subscribe(ButtonReleased, on_button_released)
     bus.subscribe(KeyDown, on_key_down)
     bus.subscribe(KeyUp, on_key_up)
     bus.subscribe(AxesChanged, on_axes_changed)
     bus.start()
+    profiles = ProfileManager("config/profiles.json", bus)
+    profiles.load()
+    bus.subscribe(ProfileChanged, on_profile_changed)
 
     devices = [
         ControllerInput(deadzone=config.get("input.default_deadzone", 0.5)),
@@ -72,6 +95,7 @@ def main():
     log.info("running - press Ctrl+C to stop")
     try:
         while not stop_event.is_set():
+            profiles.check_for_changes()
             stop_event.wait(0.5)
     finally:
         log.info("shutting down")
@@ -80,6 +104,8 @@ def main():
             device.close()
         bus.stop()
         log.info("stopped")
+
+    
 
 
 if __name__ == "__main__":

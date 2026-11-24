@@ -6,6 +6,8 @@ from gcs.core.events import (
     AxesChanged,
     ButtonPressed,
     ButtonReleased,
+    ControllerConnected,
+    ControllerDisconnected,
     KeyDown,
     KeyUp,
 )
@@ -26,6 +28,8 @@ class InputService:
         self._last_buttons = set()
         self._last_axes = {}
         self._last_keys = set()
+        self._controller_connected = False
+        self._controller_name = None
 
     def start(self):
         if self._thread is not None and self._thread.is_alive():
@@ -60,11 +64,20 @@ class InputService:
                 log.exception("polling %s failed", device.name)
                 continue
             if device.name == "controller":
-                self._handle_controller(state)
+                self._handle_controller(device, state)
             elif device.name == "keyboard":
                 self._handle_keyboard(state)
 
-    def _handle_controller(self, state):
+    def _handle_controller(self, device, state):
+        if state is not None and not self._controller_connected:
+            self._controller_connected = True
+            self._controller_name = getattr(device, "controller_name", None) or device.name
+            self._bus.publish(ControllerConnected(self._controller_name))
+        elif state is None and self._controller_connected:
+            self._controller_connected = False
+            self._bus.publish(ControllerDisconnected(self._controller_name))
+            self._controller_name = None
+
         buttons = set(state["buttons"]) if state else set()
         axes = state["axes"] if state else {}
 
@@ -97,7 +110,16 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     bus = EventBus()
-    for event_type in (ButtonPressed, ButtonReleased, AxesChanged, KeyDown, KeyUp):
+    all_events = (
+        ControllerConnected,
+        ControllerDisconnected,
+        ButtonPressed,
+        ButtonReleased,
+        AxesChanged,
+        KeyDown,
+        KeyUp,
+    )
+    for event_type in all_events:
         bus.subscribe(event_type, lambda event: print(type(event).__name__, vars(event)))
     bus.start()
 
@@ -105,8 +127,8 @@ if __name__ == "__main__":
     service = InputService(devices, bus, rate_hz=50)
     service.start()
 
-    print("press keys and buttons, move sticks - 15 seconds")
-    time.sleep(15)
+    print("press keys and buttons, unplug and replug the pad - 30 seconds")
+    time.sleep(30)
 
     service.stop()
     for device in devices:

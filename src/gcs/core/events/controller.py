@@ -1,13 +1,17 @@
 class ControllerConnected:
-    def __init__(self, name, instance_id):
+    def __init__(self, name):
         self.name = name
-        self.instance_id = instance_id
+
+    def __repr__(self):
+        return f"ControllerConnected(name={self.name})"
 
 
 class ControllerDisconnected:
-    def __init__(self,name,instance_id):
-        self.name=name
-        self.instance_id=instance_id
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return f"ControllerDisconnected(name={self.name})"
 
 
 class AxesChanged:

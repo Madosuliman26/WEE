@@ -1,0 +1,34 @@
+{
+  "default_profile": "keyboard_default",
+  "controller_map": {
+    "Wireless Controller": "pilot_ps4"
+  },
+  "profiles": {
+    "pilot_ps4": {
+      "buttons": {
+        "cross": "claw_toggle",
+        "circle": "lights",
+        "l1": "camera_up",
+        "r1": "camera_down"
+      },
+      "axes": {
+        "righty": "surge",
+        "rightx": "yaw",
+        "lefty": "heave"
+      },
+      "invert": ["righty"],
+      "keys": {
+        "w": "surge_forward",
+        "s": "surge_back"
+      }
+    },
+    "keyboard_default": {
+      "keys": {
+        "w": "surge_forward",
+        "s": "surge_back",
+        "a": "yaw_left",
+        "d": "yaw_right"
+      }
+    }
+  }
+}
