@@ -1,0 +1,65 @@
+import pytest
+
+from gcs import core
+from gcs.core import events
+from gcs.core.events import (
+    AxesChanged,
+    ButtonPressed,
+    ButtonReleased,
+    ConfigReloaded,
+    ControllerConnected,
+    ControllerDisconnected,
+    KeyDown,
+    KeyUp,
+    ProfileChanged,
+    Shutdown,
+)
+
+
+def test_button_events_carry_the_button():
+    assert ButtonPressed("cross").button == "cross"
+    assert ButtonReleased("cross").button == "cross"
+
+
+def test_key_events_carry_the_key():
+    assert KeyDown("w").key == "w"
+    assert KeyUp("w").key == "w"
+
+
+def test_axes_changed_carries_the_axes():
+    assert AxesChanged({"rightx": 1}).axes == {"rightx": 1}
+
+
+def test_controller_events_carry_the_name():
+    assert ControllerConnected("Wireless Controller").name == "Wireless Controller"
+    assert ControllerDisconnected("Wireless Controller").name == "Wireless Controller"
+
+
+def test_profile_changed_carries_profile_and_reason():
+    event = ProfileChanged("pilot_ps4", "auto")
+
+    assert event.profile == "pilot_ps4"
+    assert event.reason == "auto"
+
+
+def test_config_reloaded_carries_the_changed_keys():
+    assert ConfigReloaded(["input.rate_hz"]).changed_keys == ["input.rate_hz"]
+
+
+def test_shutdown_needs_no_arguments():
+    assert isinstance(Shutdown(), Shutdown)
+
+
+def test_event_types_are_distinct_classes():
+    assert ButtonPressed is not ButtonReleased
+    assert KeyDown is not KeyUp
+    assert ControllerConnected is not ControllerDisconnected
+
+
+def test_every_name_in_all_exists_in_the_package():
+    for name in events.__all__:
+        assert hasattr(events, name), name
+
+
+def test_core_package_imports():
+    assert core is not None

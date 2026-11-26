@@ -113,3 +113,32 @@ class ProfileManager:
             self._active_name = name
         log.info("active profile: %s (%s)", name, reason)
         if self._bus is not None:
+                        self._bus.publish(ProfileChanged(name, reason))
+        return True
+
+    def get_mapping(self):
+        with self._lock:
+            return self._active
+
+    def profile_for_controller(self, controller_name):
+        with self._lock:
+            return self._controller_map.get(controller_name, self._default)
+
+    def _on_controller_connected(self, event):
+        name = self.profile_for_controller(event.name)
+        if name is None:
+            log.warning("no profile for controller %s", event.name)
+            return
+        self.set_active(name, reason="auto")
+
+
+if __name__ == "__main__":
+    import time
+
+    logging.basicConfig(level=logging.INFO)
+    profiles = ProfileManager("config/profiles.json")
+    profiles.load()
+    print("edit and save config/profiles.json now (20 seconds)")
+    for _ in range(40):
+        profiles.check_for_changes()
+        time.sleep(0.5)
